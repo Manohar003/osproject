@@ -1,0 +1,174 @@
+#includestdio.h
+#includestdlib.h
+#includesignal.h
+#includetime.h
+#includeunistd.h
+#includepthread.h
+
+volatile int tc = 0;
+
+
+struct station
+ {
+	int pass_station;
+	int pass_train; 
+	pthread_mutex_t lock;
+	pthread_cond_t trainr;
+	pthread_cond_t seatp;
+	pthread_cond_t trainf;
+ };           
+
+void station_init(struct station s)
+ {
+	s-pass_station = 0;
+	s-pass_train = 0;
+	pthread_mutex_init(&(s-lock), NULL);
+	pthread_cond_init(&(s-trainr), NULL);
+	pthread_cond_init(&(s-seatp), NULL);
+	pthread_cond_init(&(s-trainf), NULL);
+ }
+
+void station_load_train(struct station s, int x)
+ {	int k=s-pass_station;
+	pthread_mutex_lock(&(s-lock));
+
+		while ((k  0) && (x  0))
+		{
+		pthread_cond_signal(&(s-trainr));
+	        x--;
+        	pthread_cond_wait(&(s-seatp), &(s-lock));
+    		}
+				
+	if (s-pass_train  0){
+	pthread_cond_wait(&(s-trainf), &(s-lock));}
+	pthread_mutex_unlock(&(s-lock));
+}
+
+void station_wait_for_train(struct station s)
+ {
+	pthread_mutex_lock(&(s-lock));
+	s-pass_station=s-pass_station+1;;
+	pthread_cond_wait(&(s-trainr), &(s-lock));
+	s-pass_station=s-pass_station+1;
+	s-pass_train=s-pass_train-1;
+	pthread_mutex_unlock(&(s-lock));
+	pthread_cond_signal(&(s-seatp));
+ }
+
+void station_on_board(struct station s)
+ {
+	pthread_mutex_lock(&(s-lock));
+	s-pass_train=s-pass_train-1;
+	pthread_mutex_unlock(&(s-lock));
+
+	if (s-pass_train == 0){
+	pthread_cond_broadcast(&(s-trainf));}
+ }
+void pt(void arg)
+ {
+	struct station s = (struct station)arg;
+	station_wait_for_train(s);
+	__sync_add_and_fetch(&tc, 1);
+	return NULL;
+ }
+
+struct lta {
+	struct station s;
+	int fs;
+};
+
+volatile int ltr = 0;
+
+void ltt(void args)
+ {
+	struct lta ltargs = (struct lta)args;
+	station_load_train(ltargs-s, ltargs-fs);
+	ltr = 1;
+	return NULL;
+ }
+
+int main()
+ {
+	long int q,u;
+	int y;
+printf(---------------------------------------------------RAILWAY ADMINISTRATOR PANEL-----------------------------------------------nnn);v
+	printf(Enter ID-);
+	scanf(%ld,&q);
+	printf(Enter Password-);
+	scanf(%ld,&u);
+	if(q==11713852 && u==12345)
+	{	
+	struct station s;
+	station_init(&s);
+printf(-------------------------------------------------------WELCOME TO INDIAN RAILWAY-----------------------------------------------n);
+	station_load_train(&s, 0);
+	station_load_train(&s, 10);
+	int i;
+	const int tp = 100;
+	int pl = tp;
+	for (i = 0; i  tp; i++) {
+	pthread_t tid;
+	int r = pthread_create(&tid, NULL, pt, &s);
+	if (r != 0) {
+	perror(pthread_create);
+	exit(1);
+	  }
+        }
+	station_load_train(&s, 0);
+	int tpb = 0;
+	const int mfs = 45;
+	int p = 0;
+	while (pl  0) {
+	int fs = random() % mfs;
+	printf(Train has at present%d free seatsn, fs);
+	usleep(3000);
+	ltr = 0;
+	struct lta args = {&s,fs};
+	pthread_t lt_tid;
+	int r = pthread_create(&lt_tid, NULL, ltt, &args);
+	if (r != 0) {
+	perror(pthread_create);
+	exit(1);
+	}
+
+	int ttr;
+	if(plfs)
+	{
+	 ttr=pl;
+	}
+	else{
+	 ttr=fs;
+	}
+	int tr = 0;
+	while (tr ttr) 
+	{
+	 if (tc  0) {
+	 if ((p % 2) == 0)
+	 usleep(random() % 2);
+	 tr=tr+1;
+	 station_on_board(&s);
+	__sync_sub_and_fetch(&tc, 1);
+         }
+       }
+	for (i = 0; i  1000; i++) {
+	if (i  50 && ltr)
+	break;
+	usleep(80000);
+	}
+	if (!ltr) {
+	fprintf(stderr, WELL, the current train is in the stationn);
+	exit(1);
+	}
+	pl=pl-tr;
+	tpb =tpb+tr;
+	printf(Train has started from station with %d new passenger's nnn,ttr);
+	 p=p+1;
+
+	}
+ } 
+else
+{
+printf(nWrong Id or PASSWORDnn);
+goto v;
+}
+}
